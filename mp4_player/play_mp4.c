@@ -3,7 +3,7 @@
 #include "stream.h"
 #include "audio_video_thread.h"
 
-/**************** 请先阅读log.txt ********************/
+/**************** 请先阅读log.md ********************/
 
 int thread_quit = 0;
 int thread_stop = 0;
