@@ -3,6 +3,7 @@
 // 重采样后没有了剧烈的噪音
 #define SUPPORT_AUDIO_SWR 1
 
+// 解封装时，添加adts头，mp4a --》 AAC。
 char *adts_header_gen(int len) {
     static char header[7];
 
@@ -56,8 +57,6 @@ static void SDL_draw_frame(struct VideoState *video, AVFrame *frame) {
     SDL_RenderPresent(video->renderer);
 }
 
-
-
 int audio_thread(void *p) {
     struct MediaState *media = (struct MediaState *)p;
     struct AudioState *audio = media->audio_state;
@@ -67,8 +66,7 @@ int audio_thread(void *p) {
     // 启动播放
     SDL_PauseAudio(0); 
     while (1) {
-        if (media->event.type == QUIT_EVENT) break;
-        else if (media->event.type == STOP_EVENT) continue;
+        HANDLE_EVENT(media->event.type);
 
         // 从码流队列中取数据, 解缓冲区无数据且封装已完成时退出
         AVPacket *packet =  dequeue(audio->stream_state->que, demuxer_state);
@@ -95,9 +93,7 @@ int video_thread(void *p) {
     
     int display_us = 1*1000 / video->stream_state->fps; 
     while (1) {
-        //HANDLE_EVENT(media->event.type);
-        if (media->event.type == QUIT_EVENT) break;
-        else if (media->event.type == STOP_EVENT) continue;
+        HANDLE_EVENT(media->event.type);
     
         // 从码流队列中取数据, 解缓冲区无数据且封装已完成时退出
         AVPacket *packet =  dequeue(video->stream_state->que, demuxer_state);

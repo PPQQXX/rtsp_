@@ -3,27 +3,7 @@
 #include "stream.h"
 #include "audio_video_thread.h"
 
-/* 没有起作用...
-#define HANDLE_EVENT(type) do { \
-    if (type == STOP_EVENT) continue;\
-    else if (type == QUIT_EVENT) break;\
-} while(0)
-*/
-
-
-/**
- * 1. packet_queue.h        提供环形缓冲区的数据管理机制，不涉及数据块的创建和销毁
- * 2. stream.h              提供码流相关的结构，包含StreamState,MediaState结构，解封装线程
- * 3. audio_video_thread.h  提供音频和视频码流的解码播放线程，包含AudioState,VideoState结构
- * 4. main.c                提供播放控制线程，定时刷新事件线程
- */
-
-
-/**
- * 问题1：播放控制，需要在所有线程中添加代码，要进行松耦合优化
- * 问题2：尽力统一音频码流和视频的操作，消除if-else(策略模式)。
- * 其它：。。。
- */
+/**************** 请先阅读log.txt ********************/
 
 int thread_quit = 0;
 int thread_stop = 0;
@@ -92,8 +72,8 @@ int main(int argc, char const* argv[])
     media->playback_control_tid = SDL_CreateThread(playback_control_thread, NULL, media); 
   
     // 等待线程结束
-    SDL_WaitThread(media->playback_control_tid, NULL);
     SDL_WaitThread(media->demuxer_tid, NULL);
+    SDL_WaitThread(media->playback_control_tid, NULL);
     
     MediaState_Destroy(media);
     

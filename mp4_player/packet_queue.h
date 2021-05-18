@@ -2,7 +2,7 @@
 #define __PACKET_QUEUE_H
 
 #include <pthread.h>
-#define MAX_QUEUE 128
+#define MAX_QUEUE 256
 typedef void * Elem_t;
 
 // 只提供数据管理机制，并不实际创建和销毁结构
