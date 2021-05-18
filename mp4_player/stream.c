@@ -1,7 +1,6 @@
 #include <string.h>
 #include "stream.h"
 
-int demuxer_state = 0;
 int demuxer_thread(void *p) {
     struct MediaState *media = (struct MediaState *)p;
     struct VideoState *video = media->video_state;
@@ -26,7 +25,7 @@ int demuxer_thread(void *p) {
                 break;
             }
             // 将码流数据放到队列中管理
-            enqueue(video->stream_state->que, packet);
+            enqueue(video->stream_state->que, packet, video->stream_state->reader_count);
         } else if (packet->stream_index == audio->stream_state->stream_index) {
             // 添加ADTS头
             AVPacket *tmp = av_packet_alloc();
@@ -36,14 +35,15 @@ int demuxer_thread(void *p) {
             memcpy(tmp->data + 7, packet->data, packet->size);
             
             av_packet_free(&packet);
-            enqueue(audio->stream_state->que, tmp);
+            enqueue(audio->stream_state->que, tmp, audio->stream_state->reader_count);
         } else {
-            av_packet_unref(packet);
-            continue; 
+            printf("unkown stream\n");
+            av_packet_free(&packet);
+            break; 
         }
     }
-    // 解封装已结束
-    demuxer_state = 1;
+    audio->stream_state->writer_count = 0;
+    video->stream_state->writer_count = 0;
     printf("demuxer_thread end\n");
 }
 
@@ -75,6 +75,8 @@ int StreamState_Init(struct StreamState **stream, int stream_type, AVFormatConte
         printf("failed to create queue\n");
         return -1;
     }
+    me->reader_count = 1;
+    me->writer_count = 1;
 
     *stream = me;
     printf("Init StreamState Succes\n");
@@ -103,7 +105,7 @@ int MediaState_Init(struct MediaState **media, const char *url) {
         printf("failed to init video state\n");
         return -1;
     } 
-        
+
     *media = me;
     printf("Init MediaState Succes\n");
     return 0;    

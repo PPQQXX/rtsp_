@@ -16,8 +16,9 @@ struct myqueue {
 };
 
 struct myqueue *create_queue_buffer(void);
-int enqueue(struct myqueue *q, Elem_t t);
-Elem_t dequeue(struct myqueue *q, int writefinish);
+int enqueue(struct myqueue *q, Elem_t t, int reader_count);
+Elem_t dequeue(struct myqueue *q, int writer_count);
+void queue_wakeup(struct myqueue *q);
 void destroy_queue_buffer(struct myqueue *q);
 
 

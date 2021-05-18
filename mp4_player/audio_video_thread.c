@@ -61,7 +61,6 @@ int audio_thread(void *p) {
     struct MediaState *media = (struct MediaState *)p;
     struct AudioState *audio = media->audio_state;
     AVFrame *frame = av_frame_alloc();
-    //int display_us = 1*1000 / audio->stream_state->fps; 
     
     // 启动播放
     SDL_PauseAudio(0); 
@@ -69,7 +68,7 @@ int audio_thread(void *p) {
         HANDLE_EVENT(media->event.type);
 
         // 从码流队列中取数据, 解缓冲区无数据且封装已完成时退出
-        AVPacket *packet =  dequeue(audio->stream_state->que, demuxer_state);
+        AVPacket *packet =  dequeue(audio->stream_state->que, audio->stream_state->writer_count);
         if (packet == NULL) break;
 
         int ret = decodec_packet_to_frame(audio->stream_state->cod_ctx, packet, frame);
@@ -79,9 +78,10 @@ int audio_thread(void *p) {
         SDL_play_pcm(audio, frame);
         av_packet_free(&packet);  // 播放完一帧后清理
         av_frame_unref(frame);
-        //SDL_Delay(display_us);
     }
     av_frame_free(&frame);
+    audio->stream_state->reader_count--;
+    queue_wakeup(audio->stream_state->que);
     printf("audio_thread end\n");
 }
 
@@ -95,8 +95,8 @@ int video_thread(void *p) {
     while (1) {
         HANDLE_EVENT(media->event.type);
     
-        // 从码流队列中取数据, 解缓冲区无数据且封装已完成时退出
-        AVPacket *packet =  dequeue(video->stream_state->que, demuxer_state);
+        // 从码流队列中取数据, 缓冲区无数据且解封装已完成时退出
+        AVPacket *packet =  dequeue(video->stream_state->que, video->stream_state->writer_count);
         if (packet == NULL) break;
 
         int ret = decodec_packet_to_frame(video->stream_state->cod_ctx, packet, frame);
@@ -109,6 +109,8 @@ int video_thread(void *p) {
         SDL_Delay(display_us);
     }
     av_frame_free(&frame);
+    video->stream_state->reader_count--;
+    queue_wakeup(video->stream_state->que);
     printf("video_thread end\n");
 }
 

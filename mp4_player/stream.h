@@ -23,6 +23,10 @@ struct StreamState {
     AVCodec *cod;               // 解码器
     float fps;                  // 视频播放延时为1/fps
     struct myqueue *que;        // 可播放的码流队列
+    
+    // 优化队列的管理：解封装完成，队列空时不需要等待数据
+    int writer_count;         // 写者数量，对应解封装线程
+    int reader_count;         // 读者数量，对应取数据解码线程
 };  
 
 int StreamState_Init(struct StreamState **stream, int stream_type, AVFormatContext *fmt_ctx);
@@ -42,7 +46,6 @@ struct MediaState {
     SDL_Event event;                    // 按键事件，播放/暂停/退出
 };
 
-extern int demuxer_state;       // 1表示解封装完成，队列空时不需要等待数据
 int demuxer_thread(void *p);
 int MediaState_Init(struct MediaState **media, const char *url);
 void MediaState_Destroy(struct MediaState *media);

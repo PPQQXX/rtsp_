@@ -31,7 +31,7 @@ int playback_control_thread(void *p) {
 
     media->audio_state->audio_tid = SDL_CreateThread(audio_thread, NULL, media);
     media->video_state->video_tid = SDL_CreateThread(video_thread, NULL, media);
-    
+
     SDL_Thread *refresh_tid = SDL_CreateThread(refresh_thread, NULL, NULL);
     while (1) {
         if (media->event.type == SDL_KEYDOWN) {
@@ -70,13 +70,14 @@ int main(int argc, char const* argv[])
     
     media->demuxer_tid = SDL_CreateThread(demuxer_thread, NULL, media);
     media->playback_control_tid = SDL_CreateThread(playback_control_thread, NULL, media); 
-  
+
     // 等待线程结束
-    SDL_WaitThread(media->demuxer_tid, NULL);
     SDL_WaitThread(media->playback_control_tid, NULL);
+    printf("destroy playback_control_thread\n");
+    SDL_WaitThread(media->demuxer_tid, NULL);
+    printf("destroy demuxer_thread\n");
     
     MediaState_Destroy(media);
-    
     SDL_Quit();
     return 0;
 }
