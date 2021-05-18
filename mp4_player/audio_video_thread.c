@@ -81,7 +81,7 @@ int audio_thread(void *p) {
     }
     av_frame_free(&frame);
     audio->stream_state->reader_count--;
-    queue_wakeup(audio->stream_state->que);
+    //queue_wakeup(audio->stream_state->que);
     printf("audio_thread end\n");
 }
 
@@ -110,7 +110,7 @@ int video_thread(void *p) {
     }
     av_frame_free(&frame);
     video->stream_state->reader_count--;
-    queue_wakeup(video->stream_state->que);
+    //queue_wakeup(video->stream_state->que);
     printf("video_thread end\n");
 }
 

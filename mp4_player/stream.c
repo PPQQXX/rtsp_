@@ -25,7 +25,9 @@ int demuxer_thread(void *p) {
                 break;
             }
             // 将码流数据放到队列中管理
-            enqueue(video->stream_state->que, packet, video->stream_state->reader_count);
+            if (enqueue(video->stream_state->que, packet, video->stream_state->reader_count) < 0) {
+                break;  // 解码线程退出时才会出现返回-1的情况
+            }
         } else if (packet->stream_index == audio->stream_state->stream_index) {
             // 添加ADTS头
             AVPacket *tmp = av_packet_alloc();
@@ -35,12 +37,20 @@ int demuxer_thread(void *p) {
             memcpy(tmp->data + 7, packet->data, packet->size);
             
             av_packet_free(&packet);
-            enqueue(audio->stream_state->que, tmp, audio->stream_state->reader_count);
+            if (enqueue(audio->stream_state->que, tmp, audio->stream_state->reader_count) < 0) {
+                break;
+            }
         } else {
             printf("unkown stream\n");
             av_packet_free(&packet);
             break; 
         }
+        // 缓冲区：256帧原始数据，视频24fps，40ms播放一帧，音频44100/1024 = 42fps，22ms播放一帧
+        // 可以计算相关的延时，但只要读写速度不均衡，最终还是会走向队列满，线程被阻塞
+        
+        // 当大于缓冲区一半时，延时使消耗大于产出，que->size减小
+        if (video->stream_state->que->size > MAX_QUEUE/2)
+            SDL_Delay(5*video->stream_state->que->size);
     }
     audio->stream_state->writer_count = 0;
     video->stream_state->writer_count = 0;

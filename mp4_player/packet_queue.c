@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "packet_queue.h"
 
 /*
@@ -29,30 +30,25 @@ static int next_pos(int pos) {
 
 void queue_wakeup(struct myqueue *q) {
     pthread_cond_broadcast(&q->cond);
+    usleep(500*1000); 
+    pthread_cond_broadcast(&q->cond);
 }
 
-// 虽然加了读者写者的条件，但因为一直没有数据变化的广播，所以无法唤醒退出
-// 一直卡在pthread_cond_wait，可以考虑添加一个检测读者/写者是否都存在的线程
-// 如果有一方缺失，则调用pthread_cond_broadcast，唤醒被阻塞的线程
+
 int enqueue(struct myqueue *q, Elem_t t, int reader_count) {
-    int res = 0;
+    if (reader_count <= 0) return -1; // 读者不存在，存数据到队列没有意义 
     pthread_mutex_lock(&q->mut);
 
-    // 缓冲区为满且还有读者存在时，等待才有意义
     while (q->size == MAX_QUEUE && reader_count > 0) {
         pthread_cond_wait(&q->cond, &q->mut);
     }
-    if (reader_count != 0) {  
-        q->buffer[q->tail] = t;
-        q->tail = next_pos(q->tail);
-        q->size++;
-        pthread_cond_broadcast(&q->cond);
-    } else {
-        res = -1;
-    }
+    q->buffer[q->tail] = t;
+    q->tail = next_pos(q->tail);
+    q->size++;
+    pthread_cond_broadcast(&q->cond);
 
     pthread_mutex_unlock(&q->mut);
-    return res;
+    return 0;
 }
 
 Elem_t dequeue(struct myqueue *q, int writer_count) {
