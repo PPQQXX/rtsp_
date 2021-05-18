@@ -29,6 +29,14 @@ struct VideoState {
     SDL_Rect rect;
     SDL_Thread *video_tid;
 };
+/*
+struct StreamImpl {
+    int (*av_thread) (void *p);
+    void (*av_draw_frame) (struct StreamState *stream, AVFrame);
+    int (*AVState_Init) (struct StreamState **av_state, AVFormatContext *fmt_ctx);
+    void (*AVState_Destroy)(struct StreamState *av_state);
+};
+*/
 
 
 int audio_thread(void *p);

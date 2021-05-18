@@ -9,8 +9,7 @@ int demuxer_thread(void *p) {
 
     // 读取一帧编码数据
     while (1) {
-        if (media->event.type == QUIT_EVENT) break;
-        else if (media->event.type == STOP_EVENT) continue;
+        HANDLE_EVENT(media->event.type);
         
         AVPacket *packet = av_packet_alloc();
         if (av_read_frame(media->fmt_ctx, packet) != 0) break;
