@@ -1,5 +1,6 @@
 ### mp4_player项目介绍
 
+[博客文章地址](https://blog.csdn.net/weixin_43796767/article/details/117001020)
 
 #### 1、思路介绍
 ```
