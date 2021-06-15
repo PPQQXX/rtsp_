@@ -11,6 +11,10 @@
 #define RTP_MAX_PTK_SIZE 1400
 #define RTP_PACKET_SIZE (RTP_HEADER_SIZE+2+RTP_MAX_PTK_SIZE) 
 
+#define RTP_FRAG_TYPE_START     0 
+#define RTP_FRAG_TYPE_COMMON    1 
+#define RTP_FRAG_TYPE_END       2 
+
 struct rtp_header {
     // Byte 0，位域
     uint8_t csrclen:4;
