@@ -35,8 +35,9 @@ struct rtp_packet {
     uint8_t payload[0];         // 柔性数组
 };
 
+// 传h264时marker为0，传aac时marker为1
 void rtp_header_init(struct rtp_header *head, uint8_t payloadtype, \
-            uint16_t seq, uint32_t timestamp, uint32_t ssrc);
+            uint8_t marker, uint16_t seq, uint32_t timestamp, uint32_t ssrc);
 
 /*
  * @params: packetsize = rtp_headsize + payloadsize

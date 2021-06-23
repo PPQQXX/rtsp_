@@ -8,13 +8,13 @@
 
  
 void rtp_header_init(struct rtp_header *head, uint8_t payloadtype, \
-            uint16_t seq, uint32_t timestamp, uint32_t ssrc) {
+            uint8_t marker, uint16_t seq, uint32_t timestamp, uint32_t ssrc) {
     head->csrclen = 0;
     head->extension = 0;
     head->padding = 0;
     head->version = RTP_VERSION;
     head->payloadtype = payloadtype;
-    head->marker = 0;
+    head->marker = marker;
     head->seq = seq;
     head->timestamp = timestamp;
     head->ssrc = ssrc;
