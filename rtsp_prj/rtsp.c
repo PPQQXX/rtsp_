@@ -31,11 +31,9 @@ static void do_client(int clientSockfd, client_t *client,
     char* sbuf = malloc(BUF_MAX_SIZE);
     char line[400];
     
-    int cseq = 0;
+    int cseq = 0, recvLen;
     while(1)
     {
-        int recvLen;
-
         recvLen = recv(clientSockfd, rbuf, BUF_MAX_SIZE, 0);
         if(recvLen <= 0)
             goto out;
@@ -80,7 +78,6 @@ static void do_client(int clientSockfd, client_t *client,
             loadptk_SETUP(sbuf, cseq, client->rtp_port);
         else if (!strcmp(method, "PLAY")) {
             loadptk_PLAY(sbuf, cseq);
-            func(serverRtpSockfd, client);
         }
         else
             goto out;
@@ -88,6 +85,13 @@ static void do_client(int clientSockfd, client_t *client,
         printf("---------------S->C--------------\n");
         printf("%s", sbuf);
         send(clientSockfd, sbuf, strlen(sbuf), 0);
+            
+        // 响应完成后，再发码流数据
+        if (!strcmp(method, "PLAY")) { 
+            printf("start play\n");
+            func(serverRtpSockfd, client);
+            printf("play finish.\n");
+        }
     }
 out:
     close_socket(clientSockfd);

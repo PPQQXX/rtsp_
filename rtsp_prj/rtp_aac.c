@@ -94,7 +94,7 @@ int rtp_play_aac(int sockfd, client_t *client) {
         fread(data, 1, adts.length-7, fp);
         rtp_send_acc_frame(sockfd, client, data, adts.length-7, packet);    
         
-        printf("packet seq:%d adts freq:%d length: %d\n",\
+        //printf("packet seq:%d adts freq:%d length: %d\n",\
                 packet->header.seq, adts.freq, adts.length);
         float fps = adts.freq / 1024.0;
         usleep(1000*1000 / (int)fps);

@@ -144,11 +144,10 @@ int rtp_send_h264_nalu(int sockfd, client_t *client, uint8_t *nalu, int nalulen,
 
         int nalu_pos = 1; // 跳过nalu头部
         for (int i = 0; i < ptk_cnt - 1; i++) {
-            if (i == 0) {
+            if (i == 0) 
                 load_fragment_msg(packet, nalu_hdr, RTP_FRAG_TYPE_START);
-            } else {
+            else 
                 load_fragment_msg(packet, nalu_hdr, RTP_FRAG_TYPE_COMMON);
-            }
 
             int ret = rtp_send_fragment(sockfd, client, &nalu[nalu_pos], RTP_MAX_PTK_SIZE, packet);
             if (ret < 0) return -1;
@@ -183,7 +182,7 @@ int rtp_play_h264(int sockfd, client_t *client) {
             break;
         } else if (codelen == 4) { // 该NALU是一帧的开始
             index++;
-            printf("read %4d rtp frame:%d\n", index, nalulen);
+            //printf("read %4d rtp frame:%d\n", index, nalulen);
             usleep(1000*1000/H264_FPS);
         }
 
