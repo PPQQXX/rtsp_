@@ -7,9 +7,9 @@
  * @param: 
  *      sockfd --- UDP socket
  *      client --- client->ip, client->rtp_port
- *      path   --- H264 file 
+ *      path   --- H264_FILE
  */
-int rtp_play_h264(int sockfd, client_t *client, const char *path);
+int rtp_play_h264(int sockfd, client_t *client);
 
 
 /*
@@ -25,7 +25,7 @@ int rtp_play_h264(int sockfd, client_t *client, const char *path);
  * a=framerate:25
  * c=IN IP4 127.0.0.1
  */
-int rtp_h264_test(const char *file);
+int rtp_h264_test(void);
 
 
 #endif

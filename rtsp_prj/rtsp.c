@@ -7,32 +7,25 @@
 #include "sock.h"
 #include "protocol.h"
 #include "rtsp.h"
+#include "rtp_h264.h"
+#include "rtp_aac.h"
 
 #define BUF_MAX_SIZE    (1024*1024)
 
-static int handleCmd_OPTIONS(char* result, int cseq);
-static int handleCmd_DESCRIBE(char* result, int cseq, char* url);
-static int handleCmd_SETUP(char* result, int cseq, int clientRtpPort);
-static int handleCmd_PLAY(char* result, int cseq);
+static void loadptk_OPTIONS(char* result, int cseq);
+static void loadptk_DESCRIBE(char* result, int cseq, char* url);
+static void loadptk_SETUP(char* result, int cseq, int clientRtpPort);
+static void loadptk_PLAY(char* result, int cseq);
+static char* getLineFromBuf(char* buf, char* line);
 
-static char* getLineFromBuf(char* buf, char* line)
-{
-    while(*buf != '\n') {
-        *line = *buf;
-        line++;
-        buf++;
-    }
-    *line = '\n';    ++line;
-    *line = '\0';
+typedef int (*playfunc_t) (int, client_t *);
+int rtp_play_null(int rtp_sockfd, client_t *client) {}
 
-    ++buf;
-    return buf; 
-}
-static void do_client(int clientSockfd, const char* clientIP, int clientPort,
-        int serverRtpSockfd, int serverRtcpSockfd)
+
+static void do_client(int clientSockfd, client_t *client,
+        int serverRtpSockfd, int serverRtcpSockfd, playfunc_t func)
 {
     char method[40], url[100], version[40];
-    int clientRtpPort, clientRtcpPort;
     char *bufPtr;
     char* rbuf = malloc(BUF_MAX_SIZE);
     char* sbuf = malloc(BUF_MAX_SIZE);
@@ -68,56 +61,29 @@ static void do_client(int clientSockfd, const char* clientIP, int clientPort,
         }
 
         /* 如果是SETUP，那么就再解析client_port */
-        if(!strcmp(method, "SETUP"))
-        {
-            while(1)
-            {
+        if (!strcmp(method, "SETUP")) {
+            while(1) {
                 bufPtr = getLineFromBuf(bufPtr, line);
-                if(!strncmp(line, "Transport:", strlen("Transport:")))
-                {
+                if (!strncmp(line, "Transport:", strlen("Transport:"))) {
                     sscanf(line, "Transport: RTP/AVP;unicast;client_port=%d-%d\r\n",
-                            &clientRtpPort, &clientRtcpPort);
+                            &client->rtp_port, &client->rtcp_port);
                     break;
                 }
             }
         }
 
-        if(!strcmp(method, "OPTIONS"))
-        {
-            if(handleCmd_OPTIONS(sbuf, cseq))
-            {
-                printf("failed to handle options\n");
-                goto out;
-            }
-        }
-        else if(!strcmp(method, "DESCRIBE"))
-        {
-            if(handleCmd_DESCRIBE(sbuf, cseq, url))
-            {
-                printf("failed to handle describe\n");
-                goto out;
-            }
-        }
-        else if(!strcmp(method, "SETUP"))
-        {
-            if(handleCmd_SETUP(sbuf, cseq, clientRtpPort))
-            {
-                printf("failed to handle setup\n");
-                goto out;
-            }
-        }
-        else if(!strcmp(method, "PLAY"))
-        {
-            if(handleCmd_PLAY(sbuf, cseq))
-            {
-                printf("failed to handle play\n");
-                goto out;
-            }
+        if (!strcmp(method, "OPTIONS"))
+            loadptk_OPTIONS(sbuf, cseq);
+        else if (!strcmp(method, "DESCRIBE"))
+            loadptk_DESCRIBE(sbuf, cseq, url);
+        else if (!strcmp(method, "SETUP"))
+            loadptk_SETUP(sbuf, cseq, client->rtp_port);
+        else if (!strcmp(method, "PLAY")) {
+            loadptk_PLAY(sbuf, cseq);
+            func(serverRtpSockfd, client);
         }
         else
-        {
             goto out;
-        }
 
         printf("---------------S->C--------------\n");
         printf("%s", sbuf);
@@ -143,27 +109,37 @@ int rtsp_talk_with_client(int server_sockfd) {
         return -1;
     }
 
-    int client_sockfd, client_port;
-    char client_ip[40];
+    int client_sockfd;
+    client_t client;
+    client.ip = malloc(32); 
+    
     while(1) {
-        client_sockfd = accept_client(server_sockfd, client_ip, &client_port);
+        client_sockfd = accept_client(server_sockfd, client.ip, &client.tcp_port);
         if (client_sockfd < 0) {
             printf("failed to accept client\n");
             return -1;
         }
-        printf("accept client: %s:%d\r\n", client_ip, client_port);
+        printf("accept client: %s:%d\r\n", client.ip, client.tcp_port);
 
-        do_client(client_sockfd, client_ip, client_port, rtp_fd, rtcp_fd);
+#if RTSP_USE_RTP_H264 
+        do_client(client_sockfd, &client, rtp_fd, rtcp_fd, rtp_play_h264);
+#elif RTSP_USE_RTP_AAC 
+        do_client(client_sockfd, &client, rtp_fd, rtcp_fd, rtp_play_aac);
+#else
+        do_client(client_sockfd, &client, rtp_fd, rtcp_fd, rtp_play_null);
+#endif
         close_socket(client_sockfd); 
     }
 
+    free(client.ip);
     close_socket(rtp_fd);
     close_socket(rtcp_fd);
     return 0;
 }
 
 
-int rtsp_test(void)
+
+int rtsp_server_test(void)
 {
     int server_sockfd = create_tcp_connect(SERVER_TCP_PORT);
     if (server_sockfd < 0) return -1;
@@ -177,24 +153,33 @@ int rtsp_test(void)
 
 
 
-static int handleCmd_OPTIONS(char* result, int cseq)
+static void loadptk_OPTIONS(char* result, int cseq)
 {
     sprintf(result, "RTSP/1.0 200 OK\r\n"
             "CSeq: %d\r\n"
             "Public: OPTIONS, DESCRIBE, SETUP, PLAY\r\n"
             "\r\n",
             cseq);
-
-    return 0;
 }
 
-static int handleCmd_DESCRIBE(char* result, int cseq, char* url)
+static void loadptk_DESCRIBE(char* result, int cseq, char* url)
 {
     char sdp[500];
     char localIp[100];
 
     sscanf(url, "rtsp://%[^:]:", localIp);
 
+#if RTSP_USE_RTP_AAC
+    sprintf(sdp, "v=0\r\n"
+            "o=- 9%ld 1 IN IP4 %s\r\n"
+            "t=0 0\r\n"
+            "a=control:*\r\n"
+            "m=audio 0 RTP/AVP 97\r\n"
+            "a=rtpmap:97 mpeg4-generic/44100/2\r\n"
+            "a=fmtp:97 SizeLength=13\r\n"
+            "a=control:track1\r\n",
+            time(NULL), localIp);
+#else
     sprintf(sdp, "v=0\r\n"
             "o=- 9%ld 1 IN IP4 %s\r\n"
             "t=0 0\r\n"
@@ -203,6 +188,7 @@ static int handleCmd_DESCRIBE(char* result, int cseq, char* url)
             "a=rtpmap:96 H264/90000\r\n"
             "a=control:track0\r\n",
             time(NULL), localIp);
+#endif
 
     sprintf(result, "RTSP/1.0 200 OK\r\nCSeq: %d\r\n"
             "Content-Base: %s\r\n"
@@ -213,11 +199,9 @@ static int handleCmd_DESCRIBE(char* result, int cseq, char* url)
             url,
             strlen(sdp),
             sdp);
-
-    return 0;
 }
 
-static int handleCmd_SETUP(char* result, int cseq, int clientRtpPort)
+static void loadptk_SETUP(char* result, int cseq, int clientRtpPort)
 {
     sprintf(result, "RTSP/1.0 200 OK\r\n"
             "CSeq: %d\r\n"
@@ -229,19 +213,29 @@ static int handleCmd_SETUP(char* result, int cseq, int clientRtpPort)
             clientRtpPort+1,
             SERVER_RTP_PORT,
             SERVER_RTCP_PORT);
-
-    return 0;
 }
 
-static int handleCmd_PLAY(char* result, int cseq)
+static void loadptk_PLAY(char* result, int cseq)
 {
     sprintf(result, "RTSP/1.0 200 OK\r\n"
             "CSeq: %d\r\n"
             "Range: npt=0.000-\r\n"
             "Session: 66334873; timeout=60\r\n\r\n",
             cseq);
+}
 
-    return 0;
+static char* getLineFromBuf(char* buf, char* line)
+{
+    while(*buf != '\n') {
+        *line = *buf;
+        line++;
+        buf++;
+    }
+    *line = '\n';    ++line;
+    *line = '\0';
+
+    ++buf;
+    return buf; 
 }
 
 

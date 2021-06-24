@@ -166,8 +166,8 @@ int rtp_send_h264_nalu(int sockfd, client_t *client, uint8_t *nalu, int nalulen,
     return send_bytes;
 }
 
-int rtp_play_h264(int sockfd, client_t *client, const char *path) {
-    file_t *file = create_file_manger(path, "r");
+int rtp_play_h264(int sockfd, client_t *client) {
+    file_t *file = create_file_manger(H264_FILE, "r");
     if (file == NULL) return -1;
     //printf("h264 file size: %d\n", file->filesize);
 
@@ -183,7 +183,7 @@ int rtp_play_h264(int sockfd, client_t *client, const char *path) {
             break;
         } else if (codelen == 4) { // 该NALU是一帧的开始
             index++;
-            //printf("read %4d rtp frame:%d\n", index, nalulen);
+            printf("read %4d rtp frame:%d\n", index, nalulen);
             usleep(1000*1000/H264_FPS);
         }
 
@@ -198,7 +198,7 @@ int rtp_play_h264(int sockfd, client_t *client, const char *path) {
     return 0;
 }
 
-int rtp_h264_test(const char *file)
+int rtp_h264_test(void)
 {
     int sockfd = create_udp_socket();
     if (sockfd < 0) {
@@ -210,7 +210,7 @@ int rtp_h264_test(const char *file)
     client.ip = strdup(RTP_CLIENT_IP);
     client.rtp_port = RTP_CLIENT_PORT;
     
-    rtp_play_h264(sockfd, &client, file);
+    rtp_play_h264(sockfd, &client);
 
     close_socket(sockfd);
     return 0;

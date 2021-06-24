@@ -7,9 +7,9 @@
  * @param: 
  *      sockfd --- UDP socket
  *      client --- client->ip, client->rtp_port
- *      path   --- AAC filename 
+ *      path   --- AAC_FILE 
  */
-int rtp_play_aac(int sockfd, client_t *client, const char *path);
+int rtp_play_aac(int sockfd, client_t *client);
 
 
 /*
@@ -25,7 +25,7 @@ int rtp_play_aac(int sockfd, client_t *client, const char *path);
  * a=fmtp:97 SizeLength=13;
  * c=IN IP4 127.0.0.1
  */
-int rtp_aac_test(const char *file);
+int rtp_aac_test(void);
 
 
 #endif

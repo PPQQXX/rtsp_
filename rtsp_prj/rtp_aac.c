@@ -68,18 +68,18 @@ static int rtp_send_acc_frame(int sockfd, client_t *client, uint8_t *data, int d
 }
 
 
-int rtp_play_aac(int sockfd, client_t *client, const char *path) {
+int rtp_play_aac(int sockfd, client_t *client) {
     struct rtp_packet *packet = (struct rtp_packet *)malloc(RTP_PACKET_SIZE);
     rtp_header_init(&packet->header, RTP_PAYLOAD_TYPE_AAC, 1, 0, 0, 0x32411);
 
-    FILE *fp = fopen(path, "r");
+    FILE *fp = fopen(AAC_FILE, "r");
     if (fp == NULL) {
         return -1;
     }
 
     uint8_t header[7];
     struct adts_header adts;
-    uint8_t *data = malloc(8*1024);
+    uint8_t *data = malloc(1024); // aac数据一般是几百字节
     int ret = 0;
     while (1) {
         ret = fread(header, 1, 7, fp);
@@ -94,7 +94,7 @@ int rtp_play_aac(int sockfd, client_t *client, const char *path) {
         fread(data, 1, adts.length-7, fp);
         rtp_send_acc_frame(sockfd, client, data, adts.length-7, packet);    
         
-        //printf("packet seq:%d adts freq:%d length: %d\n",\
+        printf("packet seq:%d adts freq:%d length: %d\n",\
                 packet->header.seq, adts.freq, adts.length);
         float fps = adts.freq / 1024.0;
         usleep(1000*1000 / (int)fps);
@@ -106,7 +106,7 @@ int rtp_play_aac(int sockfd, client_t *client, const char *path) {
     return 0;
 }
 
-int rtp_aac_test(const char *file)
+int rtp_aac_test(void)
 {
     int sockfd = create_udp_socket();
     if (sockfd < 0) {
@@ -118,7 +118,7 @@ int rtp_aac_test(const char *file)
     client.ip = strdup(RTP_CLIENT_IP);
     client.rtp_port = RTP_CLIENT_PORT;
     
-    rtp_play_aac(sockfd, &client, file);
+    rtp_play_aac(sockfd, &client);
 
     close_socket(sockfd);
     return 0;
