@@ -10,15 +10,7 @@ typedef struct {
 } client_t;
 
 // rtp over tcp, 使用rtsp的socket传输
-
-// 在rtsp+rtp传输时，客户端的RTP端口不能指定，需要从SETUP请求中获取
-
-// 用于RTP传输测试
-#define SUPPORT_TEST_SET
-#define RTP_CLIENT_IP       "192.168.102.215"
-#define RTP_CLIENT_PORT     2018
-// 不支持ubuntu到windows的多播？
-//#define RTP_CLIENT_IP       "239.255.255.11"
+// rtsp传输流的方式取决于客户端，vlc客户端要设置rtp over tcp
 
 // H264帧率
 #define H264_FPS 25
