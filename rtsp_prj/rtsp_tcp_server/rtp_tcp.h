@@ -31,7 +31,7 @@ struct rtp_header {
 };
 
 struct rtp_packet {
-    char prev[4];            // 使用tcp传输rtp时，需要4字节的前辍
+    char interleaved[4]; // rtsp/rtp/rtcp使用同一个socket通道，添加一个Interleaved层进行区分
     struct rtp_header header;   // 12 Bytes
     uint8_t payload[0];         // 柔性数组
 };

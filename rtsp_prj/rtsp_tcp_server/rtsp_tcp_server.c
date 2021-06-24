@@ -91,10 +91,12 @@ static void do_client(int clientSockfd)
        
         // 先响应客户端，再发送码流数据
         if (!strcmp(method, "PLAY")) {
+            printf("start play\n");
             if (rtp_play_h264(clientSockfd, rtp_channel, H264_FILE) < 0) {
                 printf("rtp_play failed\n");
                 goto out;
             }
+            printf("play finish\n");
         }
     }
 out:

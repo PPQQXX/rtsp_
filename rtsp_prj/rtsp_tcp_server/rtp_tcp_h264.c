@@ -127,7 +127,7 @@ int rtp_send_h264_nalu(int sockfd, uint8_t rtpchannel, struct rtp_packet *packet
     uint8_t nalu_hdr = nalu[0];
 
     if (nalulen <= RTP_MAX_PTK_SIZE) {
-        // rtp_packet = [4字节prev, 12字节rtp头, 一个完整的nalu]
+        // rtp_packet = [4字节interleaved, 12字节rtp头, 一个完整的nalu]
         memcpy(packet->payload, nalu, nalulen);
         int ret = rtp_send_packet(sockfd, rtpchannel, packet, nalulen);
         if (ret < 0) return -1;
@@ -135,7 +135,7 @@ int rtp_send_h264_nalu(int sockfd, uint8_t rtpchannel, struct rtp_packet *packet
         packet->header.seq++;
         send_bytes += ret;
     } else {
-        // rtp_packet = [4字节prev, 12字节rtp头, 2字节片段信息, NALU数据片段]
+        // rtp_packet = [4字节interleaved, 12字节rtp头, 2字节片段信息, NALU数据片段]
         int t = nalulen - 1;  // payload不包括nalu头部
         int ptk_cnt = t / RTP_MAX_PTK_SIZE;  // 分片个数
         if (t % RTP_MAX_PTK_SIZE != 0) ptk_cnt += 1;
@@ -173,14 +173,13 @@ int rtp_play_h264(int sockfd, uint8_t rtpchannel, const char *path) {
 
     uint8_t *nalu = malloc(1024*1024);
     int nalulen, index = 0;
-    printf("send start\n");
     while (!file_search_finish(file)) {
         int codelen = get_h264_nalu(file, nalu, &nalulen);
         if (codelen < 0) {
             break;
         } else if (codelen == 4) { // 该NALU是一帧的开始
             index++;
-            //printf("read %4d rtp frame:%5d packet:%c\n", index, nalulen, packet->prev[0]);
+            //printf("read %4d rtp frame:%5d packet:%c\n", index, nalulen, packet->interleaved[0]);
             usleep(1000*1000/H264_FPS);
         }
 
@@ -188,7 +187,6 @@ int rtp_play_h264(int sockfd, uint8_t rtpchannel, const char *path) {
         if ((nalu[0] & 0x1f) != 7 && (nalu[0] & 0x1f) != 8)   // SPS、PPS不需要加时间戳
             packet->header.timestamp += 90000/H264_FPS;
     }
-    printf("send finish\n");
     free(packet);
     free(nalu);
     destroy_file_manager(file);
