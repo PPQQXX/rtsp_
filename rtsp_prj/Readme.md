@@ -12,3 +12,10 @@
 4）使用RTSP传输AAC正常。
 5）使用RTSP传输摄像头监控正常。
 ```
+
+<br>
+**点击 [RTSP实时监控项目：项目索引](https://blog.csdn.net/weixin_43796767/article/details/118225826)，回到目录。**
+<img src="https://gitee.com/zhoujiabo/blogimg/raw/master/imgs/image-20210625175348651.png" alt="image-20210625175348651" width="40%;" />
+
+作者：`zhou jiabo`
+blog主页：https://blog.csdn.net/weixin_43796767?spm=1011.2124.3001.5343
