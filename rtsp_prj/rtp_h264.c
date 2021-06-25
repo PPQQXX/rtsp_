@@ -225,8 +225,10 @@ int rtp_play_h264_rt(int sockfd, client_t *client) {
 
     pthread_t cap_tid;
     pthread_create(&cap_tid, NULL, capture_video_thread, NULL);
+
     // 必须等video_que初始化完成，才能执行add_user
-    while (video_que == NULL);  
+    while (video_que == NULL)
+        sched_yield(); 
     queue_add_user(video_que, READER_ROLE);
 
     int index = 0;
@@ -244,7 +246,9 @@ int rtp_play_h264_rt(int sockfd, client_t *client) {
     }
 
     free(rtp_pkt);
-    queue_del_user(video_que, READER_ROLE);
+    if (video_que) // 如果capture线程先退出，则video_que已被销毁
+        queue_del_user(video_que, READER_ROLE);
+    pthread_cancel(cap_tid);
     pthread_join(cap_tid, NULL);
 }
 

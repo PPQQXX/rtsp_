@@ -127,6 +127,8 @@ int rtsp_talk_with_client(int server_sockfd) {
 
 #if RTSP_USE_RTP_H264 
         do_client(client_sockfd, &client, rtp_fd, rtcp_fd, rtp_play_h264);
+#elif RTSP_USE_RTP_H264_RT 
+        do_client(client_sockfd, &client, rtp_fd, rtcp_fd, rtp_play_h264_rt);
 #elif RTSP_USE_RTP_AAC 
         do_client(client_sockfd, &client, rtp_fd, rtcp_fd, rtp_play_aac);
 #else

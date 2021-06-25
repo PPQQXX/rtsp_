@@ -21,8 +21,8 @@ static int next_pos(int pos) {
 
 int enqueue(struct myqueue *q, Elem_t t) {
     pthread_mutex_lock(&q->mut);
-    //if (q->reader_count <= 0) 
-    //    goto _Error; // 读者不存在，存数据到队列没有意义 
+    if (q->reader_count <= 0) 
+        goto _Error; // 读者不存在，存数据到队列没有意义 
 
     while (q->size == MAX_QUEUE && q->reader_count > 0) {
         pthread_cond_wait(&q->cond, &q->mut);
@@ -32,7 +32,7 @@ int enqueue(struct myqueue *q, Elem_t t) {
     q->size++;
     pthread_cond_broadcast(&q->cond);
 
-//_Error:
+_Error:
     pthread_mutex_unlock(&q->mut);
     return 0;
 }

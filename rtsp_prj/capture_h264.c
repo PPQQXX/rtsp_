@@ -62,6 +62,7 @@ void *capture_video_thread(void *p) {
     queue_del_user(video_que, WRITER_ROLE);
     destroy_queue_buffer(video_que);
     VideoInput_Destroy(input);
+    pthread_exit(NULL);
 }
 
 

@@ -11,7 +11,7 @@
  */
 int rtp_play_h264(int sockfd, client_t *client);
 
-// 边采集边传输
+// 实时监控
 int rtp_play_h264_rt(int sockfd, client_t *client);
 
 
