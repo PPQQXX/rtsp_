@@ -11,6 +11,9 @@
  */
 int rtp_play_h264(int sockfd, client_t *client);
 
+// 边采集边传输
+int rtp_play_h264_rt(int sockfd, client_t *client);
+
 
 /*
  * 模块测试例程：

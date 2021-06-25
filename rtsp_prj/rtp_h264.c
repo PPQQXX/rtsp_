@@ -6,9 +6,11 @@
 #include "sock.h"
 #include "rtp.h"
 #include "rtp_h264.h"
+#include "packet_queue.h"
+#include "libavformat/avformat.h"
+#include "pthread.h"
+#include "capture_h264.h"
 
-
-// 问题：时而花屏(已解决, 原rtp_send_h264_nalu中memcpy有误)
 typedef struct _FILE_MANAGER {
     char *filename;
     FILE *fp;
@@ -214,3 +216,37 @@ int rtp_h264_test(void)
     close_socket(sockfd);
     return 0;
 }
+
+
+/************************ For Capture H264 *****************************/
+int rtp_play_h264_rt(int sockfd, client_t *client) {
+    struct rtp_packet *rtp_pkt = (struct rtp_packet *)malloc(RTP_PACKET_SIZE);
+    rtp_header_init(&rtp_pkt->header, RTP_PAYLOAD_TYPE_H264, 0, 0, 0, 0x88923423);
+
+    pthread_t cap_tid;
+    pthread_create(&cap_tid, NULL, capture_video_thread, NULL);
+    // 必须等video_que初始化完成，才能执行add_user
+    while (video_que == NULL);  
+    queue_add_user(video_que, READER_ROLE);
+
+    int index = 0;
+    while (1) {
+        AVPacket *packet = dequeue(video_que);
+        if (packet == NULL) break;
+
+        rtp_send_h264_nalu(sockfd, client, packet->data, packet->size, rtp_pkt);
+        rtp_pkt->header.timestamp += 90000/CAMERA_FPS;
+
+        index++;
+        //printf("send %4d rtp frame:%d\n", index, packet->size);
+        usleep(1000*1000/CAMERA_FPS);
+        av_packet_free(&packet);
+    }
+
+    free(rtp_pkt);
+    queue_del_user(video_que, READER_ROLE);
+    pthread_join(cap_tid, NULL);
+}
+
+
+
